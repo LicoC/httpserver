@@ -7,9 +7,67 @@
 //
 
 #include <stdio.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <string.h>
+
+#define INVALID_VALUE (-1)
+
+#define ERROR_RETURN(ret)                    \
+if (ret == -1)                       \
+{                                       \
+printf("Error, program exited!\n"); \
+return 0;                           \
+}                                       \
 
 int main(int argc, const char * argv[]) {
-    // insert code here...
-    printf("Hello, World!\n");
+    
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    
+    ERROR_RETURN(sockfd)
+    printf("created a socket successd!\n");
+    
+    struct sockaddr_in socket_addr;
+    socket_addr.sin_family = AF_INET;
+    socket_addr.sin_port = htons(8000);
+    socket_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    
+    int ret = bind(sockfd, (struct sockaddr*)&socket_addr, sizeof(socket_addr));
+    
+    ERROR_RETURN(ret)
+    printf("bind socket to host\n");
+    
+    ret = listen(sockfd, 10);
+    
+    ERROR_RETURN(ret)
+    printf("listenning...\n");
+    
+    struct sockaddr_in socket_client;
+    socklen_t len = sizeof(socket_client);
+    
+    while(1)
+    {
+        int confd = accept(sockfd, (void*)&socket_client, &len);
+        
+        if (confd == -1)
+            continue;
+        
+        char buf[1024];
+        
+        ssize_t len = read(confd, (void*)buf, 1024);
+        if (len > 0)
+        {
+            puts("Request is:");
+            puts(buf);
+            
+            char response[] = "HTTP/1.x 200 OK\r\nContent-Type: text/html\r\n\r\n<head>\r\n<title>Test</title>\r\n</head>\r\n<html>\r\n<p>Hello Python</p>\r\n<IMG src=\"test.jpg\"/>\r\n</html>";
+            
+            send(confd, (void*)response, strlen(response), 0);
+        }
+    }
+    
     return 0;
 }
