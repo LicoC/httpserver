@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define INVALID_VALUE (-1)
 
@@ -22,6 +23,42 @@ if (ret == -1)                       \
 printf("Error, program exited!\n"); \
 return 0;                           \
 }                                       \
+
+
+/*
+ *  getHtmlFile
+ *  filename: 要读取的文件名
+ *  filecontent: 读到的文件内容
+ *  return: 读取文件失败，返回-1.成功，返回读到的内容大小
+ */
+size_t getHtmlFile(const char* filename, char** filecontent)
+{
+    //get html file as body
+    FILE* pFile = fopen(filename, "r");
+    if (NULL == pFile)
+    {
+        puts("Can't get html file\n");
+        return -1;
+    }
+
+    fseek(pFile, 0, SEEK_END);
+    size_t contentSize = ftell(pFile);
+    rewind(pFile);
+    
+    char* response_body = malloc(contentSize);
+    if (NULL == response_body)
+    {
+        fclose(pFile);
+        return -1;
+    }
+    
+    contentSize = fread(response_body, 1, contentSize, pFile);
+    
+    fclose(pFile);
+    
+    *filecontent = response_body;
+    return contentSize;
+}
 
 int main(int argc, const char * argv[]) {
     
@@ -45,12 +82,11 @@ int main(int argc, const char * argv[]) {
     ERROR_RETURN(ret)
     printf("listenning...\n");
     
-    struct sockaddr_in socket_client;
-    socklen_t len = sizeof(socket_client);
-    
     while(1)
     {
-        int confd = accept(sockfd, (void*)&socket_client, &len);
+        struct sockaddr_in socket_client;
+        socklen_t clientlen = sizeof(socket_client);
+        int confd = accept(sockfd, (void*)&socket_client, &clientlen);
         
         if (confd == -1)
             continue;
@@ -63,11 +99,37 @@ int main(int argc, const char * argv[]) {
             puts("Request is:");
             puts(buf);
             
-            char response[] = "HTTP/1.x 200 OK\r\nContent-Type: text/html\r\n\r\n<head>\r\n<title>Test</title>\r\n</head>\r\n<html>\r\n<p>Hello Python</p>\r\n<IMG src=\"test.jpg\"/>\r\n</html>";
+            
+            char response_head[] = "HTTP/1.x 200 OK\r\nContent-Type: text/html\r\n\r\n";
+            char* response_body = NULL;
+            
+            size_t contentSize =
+                getHtmlFile("/users/licorice/Code/httpserver/httpserver/index.html",&response_body);
+            if (INVALID_VALUE == contentSize)
+            {
+                free(response_body);
+                continue;
+            }
+                
+            char* response = NULL;
+            size_t nResponse = strlen(response_head) + contentSize;
+
+            response = malloc(nResponse);
+            
+            if (NULL == response)
+                continue;
+            
+            strcat(response, response_body);
             
             send(confd, (void*)response, strlen(response), 0);
+            
+            free(response);
+            response = NULL;
+            //break;
         }
     }
+    
+    //close(sockfd);
     
     return 0;
 }
