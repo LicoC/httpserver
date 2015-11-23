@@ -24,9 +24,8 @@ printf("Error, program exited!\n"); \
 return 0;                           \
 }                                       \
 
-
 /*
- *  getHtmlFile
+ *  getHtmlFile 获取请求报文 url 中指定的 html 文件
  *  filename: 要读取的文件名
  *  filecontent: 读到的文件内容
  *  return: 读取文件失败，返回-1.成功，返回读到的内容大小
@@ -58,6 +57,97 @@ size_t getHtmlFile(const char* filename, char** filecontent)
     
     *filecontent = response_body;
     return contentSize;
+}
+
+//define a enum methond
+typedef enum method{IVALID_METHOD = -1, GET, HEAD, POST, PUT, TRACE, OPTIONS, DELETE, METHOD_END}method;
+
+//define a httpRequest struct to wrap the parsed http request
+typedef struct httpRequest
+{
+    method method;
+    char* request_url;
+    char* version;
+    char* Connection;
+    char* Accept;
+    char* User_Agent;
+}http_request;
+
+/*
+ * getMethod 返回请求的方法
+ * strMethod: 解析到的方法名
+ * return: 对应的方法名
+ */
+method getMethod(const char* strMethod)
+{
+    if (NULL == strMethod)
+        return IVALID_METHOD;
+    
+    method m = IVALID_METHOD;
+    
+    if (0 == strcmp(strMethod, "GET"))
+        m = GET;
+    else if (0 == strcmp(strMethod, "POST"))
+        m = POST;
+    else if (0 == strcmp(strMethod, "HEAD"))
+        m = HEAD;
+    else if (0 == strcmp(strMethod, "PUT"))
+        m = PUT;
+    else if (0 == strcmp(strMethod, "TRACE"))
+        m = TRACE;
+    else if (0 == strcmp(strMethod, "OPTIONS"))
+        m = OPTIONS;
+    else if (0 == strcmp(strMethod, "DELETE"))
+        m = DELETE;
+    
+    return m;
+}
+
+int parseRequestLine(char* requestLine, http_request* request)
+{
+    if (!requestLine)
+        return -1;
+    
+    char* p = NULL;
+    const char* delim = " ";
+    p = strtok(requestLine, delim);
+    
+    //1.parse method
+    request->method = getMethod(p);
+    
+    p = strtok(NULL, delim);
+    request->request_url = p;
+    
+    p = strtok(NULL, delim);
+    request->version = p;
+    
+    return 0;
+}
+
+/*
+ * parseHttpRequest
+ * requestBuf: 读到的请求内容
+ * request: 解析到的请求报文内容
+ * return: 是否解析成功
+ */
+int parseHttpRequest(const char* requestBuf, http_request* request)
+{
+    char* buf = malloc(strlen(requestBuf));
+    strcpy(buf, requestBuf);
+    
+    const char* delim = "\r\n";
+    char* p = NULL;
+    p = strtok(buf, delim);
+    if (!p)
+        return -1;
+    
+    puts("parsing http request:\n");
+    
+    //1.处理首部
+    http_request tRequest;
+    parseRequestLine(p, &tRequest);
+    
+    return 0;
 }
 
 int main(int argc, const char * argv[]) {
@@ -99,12 +189,13 @@ int main(int argc, const char * argv[]) {
             puts("Request is:");
             puts(buf);
             
+            parseHttpRequest(buf, NULL);
             
             char response_head[] = "HTTP/1.x 200 OK\r\nContent-Type: text/html\r\n\r\n";
             char* response_body = NULL;
             
             size_t contentSize =
-                getHtmlFile("/users/licorice/Code/httpserver/httpserver/index.html",&response_body);
+                getHtmlFile("/users/licorice/Code/httpserver/httpserver/html/index.html",&response_body);
             if (INVALID_VALUE == contentSize)
             {
                 free(response_body);
@@ -123,6 +214,7 @@ int main(int argc, const char * argv[]) {
             
             send(confd, (void*)response, strlen(response), 0);
             
+            free(response_body);
             free(response);
             response = NULL;
             //break;
