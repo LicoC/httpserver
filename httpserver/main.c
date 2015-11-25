@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include "request_parser.h"
 
 #define INVALID_VALUE (-1)
 
@@ -59,96 +60,6 @@ size_t getHtmlFile(const char* filename, char** filecontent)
     return contentSize;
 }
 
-//define a enum methond
-typedef enum method{IVALID_METHOD = -1, GET, HEAD, POST, PUT, TRACE, OPTIONS, DELETE, METHOD_END}method;
-
-//define a httpRequest struct to wrap the parsed http request
-typedef struct httpRequest
-{
-    method method;
-    char* request_url;
-    char* version;
-    char* Connection;
-    char* Accept;
-    char* User_Agent;
-}http_request;
-
-/*
- * getMethod 返回请求的方法
- * strMethod: 解析到的方法名
- * return: 对应的方法名
- */
-method getMethod(const char* strMethod)
-{
-    if (NULL == strMethod)
-        return IVALID_METHOD;
-    
-    method m = IVALID_METHOD;
-    
-    if (0 == strcmp(strMethod, "GET"))
-        m = GET;
-    else if (0 == strcmp(strMethod, "POST"))
-        m = POST;
-    else if (0 == strcmp(strMethod, "HEAD"))
-        m = HEAD;
-    else if (0 == strcmp(strMethod, "PUT"))
-        m = PUT;
-    else if (0 == strcmp(strMethod, "TRACE"))
-        m = TRACE;
-    else if (0 == strcmp(strMethod, "OPTIONS"))
-        m = OPTIONS;
-    else if (0 == strcmp(strMethod, "DELETE"))
-        m = DELETE;
-    
-    return m;
-}
-
-int parseRequestLine(char* requestLine, http_request* request)
-{
-    if (!requestLine)
-        return -1;
-    
-    char* p = NULL;
-    const char* delim = " ";
-    p = strtok(requestLine, delim);
-    
-    //1.parse method
-    request->method = getMethod(p);
-    
-    p = strtok(NULL, delim);
-    request->request_url = p;
-    
-    p = strtok(NULL, delim);
-    request->version = p;
-    
-    return 0;
-}
-
-/*
- * parseHttpRequest
- * requestBuf: 读到的请求内容
- * request: 解析到的请求报文内容
- * return: 是否解析成功
- */
-int parseHttpRequest(const char* requestBuf, http_request* request)
-{
-    char* buf = malloc(strlen(requestBuf));
-    strcpy(buf, requestBuf);
-    
-    const char* delim = "\r\n";
-    char* p = NULL;
-    p = strtok(buf, delim);
-    if (!p)
-        return -1;
-    
-    puts("parsing http request:\n");
-    
-    //1.处理首部
-    http_request tRequest;
-    parseRequestLine(p, &tRequest);
-    
-    return 0;
-}
 
 int main(int argc, const char * argv[]) {
     
@@ -186,10 +97,8 @@ int main(int argc, const char * argv[]) {
         ssize_t len = read(confd, (void*)buf, 1024);
         if (len > 0)
         {
-            puts("Request is:");
-            puts(buf);
-            
-            parseHttpRequest(buf, NULL);
+            http_request request;
+            parseHttpRequest(buf, &request);
             
             char response_head[] = "HTTP/1.x 200 OK\r\nContent-Type: text/html\r\n\r\n";
             char* response_body = NULL;
