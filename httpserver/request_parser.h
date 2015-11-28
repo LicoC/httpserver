@@ -9,17 +9,7 @@
 #ifndef request_parser_h
 #define request_parser_h
 #include "http_parser.h"
-
-//define a httpRequest struct to wrap the parsed http request
-typedef struct httpRequest
-{
-    enum http_method method;
-    char* request_url;
-    char* version;
-    char* Connection;
-    char* Accept;
-    char* User_Agent;
-}http_request;
+#include "localrequest.h"
 
 int handle_request_url(http_parser* parser, const char* data, size_t len);
 

@@ -112,7 +112,6 @@ int clearHttpRequest(http_request* request)
     free(request->Connection);
     free(request->User_Agent);
     free(request->version);
-    free(request);
     return 0;
 }
 
