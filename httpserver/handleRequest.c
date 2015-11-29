@@ -10,15 +10,34 @@
 #include "http_parser.h"
 #include "genResponseHelper.h"
 #include <stdlib.h>
+#include <string.h>
 
 char* handleGetMethod(http_request request)
 {
     if (request.method != HTTP_GET)
         return NULL;
     
-    char* response_body = NULL;
-    getHtmlFile("/users/licorice/Code/httpserver/httpserver/html/index.html",&response_body);
+    //todo:这个root 应该从配置文件里读取
+    char* root = "/users/licorice/Code/httpserver/httpserver/html";
+    char* url = NULL; //资源相对位置
+    char* path = NULL; //资源绝对位置
     
+    if (0 == strcmp(request.url, "/"))
+        url = "/index.html";
+    else
+        url = request.url;
+    
+    path = malloc(strlen(root) + strlen(url));
+    
+    strcat(path, root);
+    strcat(path, url);
+
+    char* response_body = NULL;
+    getHtmlFile(path, &response_body);
+    
+    free(path);
+    
+    //生成响应报文
     char* response = generateResponse(response_body);
     
     //这里的处理太挫了，总是要记得手动去释放，后面看看有什么好的办法

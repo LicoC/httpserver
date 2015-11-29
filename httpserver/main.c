@@ -62,6 +62,9 @@ int main(int argc, const char * argv[]) {
         ssize_t len = read(confd, (void*)buf, 1024);
         if (len > 0)
         {
+            puts("request is:");
+            puts(buf);
+            
             http_request request;
             parseHttpRequest(buf, &request);
             
