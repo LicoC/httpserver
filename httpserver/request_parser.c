@@ -60,7 +60,11 @@ int handle_header_value(http_parser* parser, const char* data, size_t len)
 int handle_request_body(http_parser* parser, const char* data, size_t len)
 {
     puts("handle_request_body\n");
-
+    http_request* request = (http_request*)parser->data;
+    
+    request->body = malloc(len + 1);
+    memcpy(request->body, data, len);
+    request->body[len] = '\0';
     return 0;
 }
 

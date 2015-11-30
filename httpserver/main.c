@@ -76,6 +76,7 @@ int main(int argc, const char * argv[]) {
                     response = handleGetMethod(request);
                     break;
             case HTTP_POST:
+                    response = handlePostMethod(request);
                     break;
             default:
                     puts("Undefined!");

@@ -13,4 +13,5 @@
 
 char* handleGetMethod(http_request request);
 
+char* handlePostMethod(http_request request);
 #endif /* handleRequest_h */
